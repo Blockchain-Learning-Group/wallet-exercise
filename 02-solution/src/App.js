@@ -11,13 +11,13 @@ import RaisedButton from 'material-ui/RaisedButton';
 import TextField from 'material-ui/TextField';
 
 // Import build Artifacts
-import tokenArtiacts from './build/contracts/Token.json'
+import tokenArtifacts from './build/contracts/Token.json'
 
 class App extends Component {
   constructor(props) {
     super(props)
     this.state = {
-      amount: '',
+      amount: 0,
       availableAccounts: [],
       defaultAccount: 0,
       ethBalance: 0,
@@ -48,24 +48,14 @@ class App extends Component {
           })
         }
 
-        // Set ETH balance below
-        this.web3.eth.getBalance(defaultAccount, (err, ethBalance) => {
-          this.setState({ ethBalance })
-        })
-
         // Get detected network and load the token contract
         this.web3.version.getNetwork(async (err, netId) => {
           // Create a reference object to the deployed token contract
-          if (netId in tokenArtiacts.networks) {
-            const tokenAddress = tokenArtiacts.networks[netId].address
-            const token = this.web3.eth.contract(tokenArtiacts.abi).at(tokenAddress)
+          if (netId in tokenArtifacts.networks) {
+            const tokenAddress = tokenArtifacts.networks[netId].address
+            const token = this.web3.eth.contract(tokenArtifacts.abi).at(tokenAddress)
             this.setState({ token })
             console.log(token)
-
-            // Set token balance below
-            token.balanceOf(defaultAccount, (err, balance) => {
-              this.setState({ tokenBalance: balance.toNumber() })
-            })
 
             // Set token sybmol below
             token.symbol((err, tokenSymbol) => {
@@ -77,7 +67,8 @@ class App extends Component {
               this.setState({ rate: rate.toNumber() })
             })
 
-            // // Call loadEventListeners below
+            this.loadAccountBalances(defaultAccount)
+
             this.loadEventListeners()
           } else {
             console.error('Token has not been deployed to the detected network.')
@@ -131,15 +122,13 @@ class App extends Component {
 
   // Transfer tokens to a user
   transfer(user, amount) {
-    // Confirm user seems to be a valid address
     if (amount > 0) {
       // Execute token transfer below
       this.state.token.transfer(user, amount, {
-          from: this.web3.eth.accounts[this.state.defaultAccount]
-        }, (err, res) => {
-          err ? console.error(err) : console.log(res)
-        }
-      )
+        from: this.web3.eth.accounts[this.state.defaultAccount]
+      }, (err, res) => {
+        err ? console.error(err) : console.log(res)
+      })
     }
   }
 

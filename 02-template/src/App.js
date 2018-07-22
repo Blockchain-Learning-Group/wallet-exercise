@@ -1,41 +1,41 @@
 import React, { Component } from 'react';
 import logo from './blg.jpg';
 import './App.css';
+// Import the web3 library
 import Web3 from 'web3'
 
 // Material UI
+import MenuItem from 'material-ui/MenuItem';
 import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider';
 import DropDownMenu from 'material-ui/DropDownMenu';
-import MenuItem from 'material-ui/MenuItem';
 import RaisedButton from 'material-ui/RaisedButton';
 import TextField from 'material-ui/TextField';
 
 // Import build Artifacts
-import tokenArtiacts from './build/contracts/Token.json'
+import tokenArtifacts from './build/contracts/Token.json'
 
 class App extends Component {
   constructor(props) {
     super(props)
     this.state = {
-      amount: '',
+      amount: 0,
       availableAccounts: [],
       defaultAccount: 0,
       ethBalance: 0,
       rate: 1,
       tokenBalance: 0,
       tokenSymbol: 0,
-      transferUser: '',
       transferAmount: '',
+      transferUser: '',
       token: null, // token contract
     }
   }
 
   componentDidMount() {
+    // Create a web3 connection
     this.web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
 
-    // If connected load contracts
     if (this.web3.isConnected()) {
-      // Retrieve available accounts
       this.web3.eth.getAccounts((err, accounts) => {
         const defaultAccount = this.web3.eth.accounts[0]
 
@@ -48,24 +48,13 @@ class App extends Component {
           })
         }
 
-        // Set ETH balance below
-        this.web3.eth.getBalance(defaultAccount, (err, ethBalance) => {
-          this.setState({ ethBalance })
-        })
-
-        // Get detected network and load the token contract
         this.web3.version.getNetwork(async (err, netId) => {
           // Create a reference object to the deployed token contract
-          if (netId in tokenArtiacts.networks) {
-            const tokenAddress = tokenArtiacts.networks[netId].address
-            const token = this.web3.eth.contract(tokenArtiacts.abi).at(tokenAddress)
+          if (netId in tokenArtifacts.networks) {
+            const tokenAddress = tokenArtifacts.networks[netId].address
+            const token = this.web3.eth.contract(tokenArtifacts.abi).at(tokenAddress)
             this.setState({ token })
             console.log(token)
-
-            // Set token balance below
-            token.balanceOf(defaultAccount, (err, balance) => {
-              this.setState({ tokenBalance: balance.toNumber() })
-            })
 
             // Set token sybmol below
             token.symbol((err, tokenSymbol) => {
@@ -77,16 +66,14 @@ class App extends Component {
               this.setState({ rate: rate.toNumber() })
             })
 
-            // // Call loadEventListeners below
+            this.loadAccountBalances(defaultAccount)
+
             this.loadEventListeners()
-          } else {
-            console.error('Token has not been deployed to the detected network.')
           }
         })
       })
-    } else {
-      console.error('Web3 is not connected.')
     }
+
   }
 
   /**
@@ -119,27 +106,23 @@ class App extends Component {
 
   // Buy new tokens with eth
   buy(amount) {
-    // Execute buy below
     this.state.token.buy({
-        from: this.web3.eth.accounts[this.state.defaultAccount],
-        value: amount
-      }, (err, res) => {
-        err ? console.error(err) : console.log(res)
-      }
-    )
+      from: this.web3.eth.accounts[this.state.defaultAccount],
+      value: amount
+    }, (err, res) => {
+      err ? console.error(err) : console.log(res)
+    })
   }
 
   // Transfer tokens to a user
   transfer(user, amount) {
-    // Confirm user seems to be a valid address
     if (amount > 0) {
       // Execute token transfer below
       this.state.token.transfer(user, amount, {
-          from: this.web3.eth.accounts[this.state.defaultAccount]
-        }, (err, res) => {
-          err ? console.error(err) : console.log(res)
-        }
-      )
+        from: this.web3.eth.accounts[this.state.defaultAccount]
+      }, (err, res) => {
+        err ? console.error(err) : console.log(res)
+      })
     }
   }
 
@@ -172,18 +155,18 @@ class App extends Component {
         />
       </div>
       <br />
-      <div>
-        <h3>Transfer Tokens</h3>
-        <TextField floatingLabelText="User to transfer tokens to." style={{width: 400}} value={this.state.transferUser}
-          onChange={(e, transferUser) => { this.setState({ transferUser }) }}
-        />
-      <TextField floatingLabelText="Amount." style={{width: 100}} value={this.state.transferAmount}
-          onChange={(e, transferAmount) => { this.setState({ transferAmount })}}
-        />
-        <RaisedButton label="Transfer" labelPosition="before" primary={true}
-          onClick={() => this.transfer(this.state.transferUser, this.state.transferAmount)}
-        />
-      </div>
+        <div>
+          <h3>Transfer Tokens</h3>
+          <TextField floatingLabelText="User to transfer tokens to." style={{width: 400}} value={this.state.transferUser}
+            onChange={(e, transferUser) => { this.setState({ transferUser }) }}
+          />
+          <TextField floatingLabelText="Amount." style={{width: 100}} value={this.state.transferAmount}
+            onChange={(e, transferAmount) => { this.setState({ transferAmount })}}
+          />
+          <RaisedButton label="Transfer" labelPosition="before" primary={true}
+            onClick={() => this.transfer(this.state.transferUser, this.state.transferAmount)}
+          />
+        </div>
     </div>
 
     return (
